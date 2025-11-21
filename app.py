@@ -70,19 +70,29 @@ def obtener_saldo_inicial_dia(total_cuentas):
 
     return saldo_inicial
 
-# Leer credenciales de variable de entorno
+# ---- Inicializar Firebase (Render + local) ----
 firebase_cert = os.getenv("FIREBASE_CREDENTIALS")
 
 if not firebase_admin._apps:
-    if firebase_cert:
-        # El contenido viene como texto JSON en la variable de entorno
-        cred_info = json.loads(firebase_cert)
-        cred = credentials.Certificate(cred_info)
-        firebase_admin.initialize_app(cred)
-    else:
-        # Opción de respaldo (solo local si tienes GOOGLE_APPLICATION_CREDENTIALS configurada)
-        cred = credentials.ApplicationDefault()
-        firebase_admin.initialize_app(cred)
+    try:
+        if firebase_cert:
+            # Viene como JSON en una variable de entorno (Render)
+            cred_info = json.loads(firebase_cert)
+            cred = credentials.Certificate(cred_info)
+            firebase_admin.initialize_app(cred)
+        elif os.path.exists("finanzas-deiner-firebase-adminsdk-fbsvc-9d70b13e78.json"):
+            # Modo local con archivo físico
+            cred = credentials.Certificate(
+                "finanzas-deiner-firebase-adminsdk-fbsvc-9d70b13e78.json"
+            )
+            firebase_admin.initialize_app(cred)
+        else:
+            raise RuntimeError(
+                "No encontré ni FIREBASE_CREDENTIALS ni el archivo de credenciales."
+            )
+    except Exception as e:
+        print("ERROR al inicializar Firebase:", e)
+        raise
 
 db = firestore.client()
 # Referencia al documento donde llevamos el contador de transacciones
