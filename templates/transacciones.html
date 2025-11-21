@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Transacciones - Finanzas de Deiner</title>
+</head>
+<body>
+  <h1>Nueva transacción</h1>
+
+
+<!-- Selección de FECHA DE TRABAJO -->
+<form method="get" action="{{ url_for('transacciones') }}">
+  <label>
+    Fecha de trabajo:<br>
+    <input type="date" name="fecha" value="{{ fecha_trabajo }}" required>
+  </label>
+  <button type="submit">Cambiar fecha</button>
+</form>
+
+
+  {% if error %}
+    <p style="color:red; font-weight:bold;">
+      {{ error }}
+    </p>
+  {% endif %}
+
+  <form method="post">
+   <!-- Esta es la fecha de trabajo que viene del backend -->
+  <input type="hidden" name="fecha_trabajo" value="{{ fecha_trabajo }}">
+  <p>
+    Fecha de trabajo actual:
+    <strong>{{ fecha_trabajo }}</strong>
+  </p>
+
+    <label>
+      Descripción:<br>
+      <input type="text" name="descripcion" required>
+    </label>
+    <br><br>
+
+    <label>
+      Valor:<br>
+      <input type="number" step="0.01" name="valor" required>
+    </label>
+    <br><br>
+
+    <label>
+      Cuenta:<br>
+      <select name="cuenta" required>
+        <option value="">-- Selecciona una cuenta --</option>
+        {% for c in cuentas %}
+          <option value="{{ c.nombre }}">{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <br><br>
+
+    <label>
+      Tipo:<br>
+      <select name="tipo" id="tipo-select" required>
+        <option value="ingreso">Ingreso</option>
+        <option value="gasto">Gasto</option>
+      </select>
+    </label>
+    <br><br>
+
+    <label>
+      Categoría:<br>
+      <select name="categoria" id="categoria-select" required>
+        <!-- Las opciones se llenan con JavaScript según el tipo -->
+      </select>
+    </label>
+    <br><br>
+
+    <button type="submit">Guardar transacción</button>
+  </form>
+
+  <hr>
+
+  <h2>Listado de transacciones</h2>
+
+  {% if transacciones and transacciones|length > 0 %}
+    <table border="1" cellpadding="6" cellspacing="0">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Fecha</th>
+      <th>Descripción</th>
+      <th>Cuenta</th>
+      <th>Tipo</th>
+      <th>Categoría</th>
+      <th>Valor</th>
+      <th>Saldo inicial</th>
+      <th>Saldo final</th>
+      <th>Saldo en cuenta</th>
+    </tr>
+  </thead>
+  <tbody>
+
+        {% for t in transacciones %}
+          <tr>
+            <td>{{ t.id_transaccion }}</td>
+            <td>{{ t.fecha }}</td>
+            <td>{{ t.descripcion }}</td>
+            <td>{{ t.cuenta }}</td>
+            <td>{{ t.tipo|capitalize }}</td>
+           
+            <td>{{ t.categoria }}</td>
+            <!-- Valor con signo ya calculado -->
+      <td style="text-align:right;">
+        {{ formatear_cop(t.valor_mostrado) }}
+      </td>
+
+      <!-- Saldo inicial global -->
+      <td style="text-align:right;">
+        {{ formatear_cop(t.saldo_inicial_global) }}
+      </td>
+
+      <!-- Saldo final global -->
+      <td style="text-align:right;">
+        {{ formatear_cop(t.saldo_final_global) }}
+      </td>
+
+      <!-- Saldo en la cuenta específica -->
+      <td style="text-align:right;">
+        {{ formatear_cop(t.saldo_en_cuenta or 0) }}
+      </td>
+    </tr>
+  {% endfor %}
+
+      </tbody>
+    </table>
+  {% else %}
+    <p>Todavía no has registrado transacciones.</p>
+  {% endif %}
+
+  <p>
+    <a href="/">⬅ Volver al inicio</a> |
+    <a href="{{ url_for('cuentas') }}">Ir a Cuentas</a>
+  </p>
+
+  <!-- Script para cambiar categorías según tipo (Ingreso / Gasto) -->
+  <script>
+    const categoriasGasto = {{ categorias_gasto | tojson }};
+    const categoriasIngreso = {{ categorias_ingreso | tojson }};
+
+    function actualizarCategorias() {
+      const tipo = document.getElementById('tipo-select').value;
+      const select = document.getElementById('categoria-select');
+      const lista = (tipo === 'gasto') ? categoriasGasto : categoriasIngreso;
+
+      // Limpiar opciones actuales
+      select.innerHTML = "";
+
+      // Agregar nuevas opciones
+      lista.forEach(function(texto) {
+        const opt = document.createElement('option');
+        opt.value = texto;
+        opt.textContent = texto;
+        select.appendChild(opt);
+      });
+    }
+
+    // Cuando cargue la página, llenamos según el tipo por defecto
+    window.addEventListener('DOMContentLoaded', function () {
+      actualizarCategorias();
+      document.getElementById('tipo-select').addEventListener('change', actualizarCategorias);
+    });
+  </script>
+</body>
+</html>

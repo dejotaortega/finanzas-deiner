@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cuentas - Finanzas de Deiner</title>
+</head>
+<body>
+  <h1>Cuentas</h1>
+  {% if error %}
+  <p style="color: red; font-weight: bold;">
+    {{ error }}
+  </p>
+{% endif %}
+
+  <h2>Resumen del día</h2>
+  <p>Saldo inicial del día: {{ formatear_cop(saldo_inicial_dia) }}</p>
+<p>Saldo actual (total cuentas): {{ formatear_cop(total_cuentas) }}</p>
+  <hr>
+
+
+ <!-- Formulario para crear una cuenta -->
+  <h2>Nueva cuenta</h2>
+  <form method="post">
+    <label>
+      Nombre de la cuenta:<br>
+      <input type="text" name="nombre" required>
+    </label>
+    <br><br>
+
+    <label>
+      Saldo inicial:<br>
+      <input type="number" name="saldo_inicial" step="0.01" value="0">
+    </label>
+    <br><br>
+    <button type="submit">Guardar cuenta</button>
+  </form>
+
+  <hr>
+
+  <!-- Lista de cuentas creadas -->
+    <h2>Lista de cuentas</h2>
+{% if cuentas and cuentas|length > 0 %}
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+      <tr>
+        <th>Cuenta</th>
+        <th>Saldo inicial</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in cuentas %}
+        <tr>
+          <td>{{ c.nombre }}</td>
+
+          <!-- Celda del saldo, SOLO un input con formato -->
+          <td style="text-align:right;">
+            <form method="post" action="{{ url_for('editar_cuenta', id_doc=c.id) }}">
+              <input type="text"
+                     name="saldo_inicial"
+                     value="{{ formatear_cop(c.saldo_inicial) }}"
+                     style="width:140px; text-align:right;">
+              <button type="submit">💾 Guardar</button>
+            </form>
+          </td>
+
+          <!-- Botón de borrar -->
+          <td>
+            <form method="post" action="{{ url_for('borrar_cuenta', id_doc=c.id) }}" style="display:inline;">
+              <button type="submit"
+                      onclick="return confirm('¿Seguro que quieres borrar esta cuenta?');">
+                🗑 Borrar
+              </button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+
+      <!-- Fila del total -->
+      <tr style="font-weight: bold; background: #f2f2f2;">
+        <th>Total general</th>
+    <th>{{ formatear_cop(total_cuentas) }}</th>
+    <th></th>
+      </tr>
+    </tbody>
+  </table>
+{% else %}
+  <p>Todavía no has creado cuentas.</p>
+{% endif %}
+
+
+
+  <p><a href="/">⬅ Volver al inicio</a></p>
+</body>
+</html>

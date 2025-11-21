@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Resumen diario</title>
+</head>
+<body>
+  <h1>Resumen diario</h1>
+
+  {% if filas and filas|length > 0 %}
+    <table border="1" cellpadding="6" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Ingresos</th>
+          <th>Gastos</th>
+          <th>Diferencia</th>
+          <th>Saldo inicial</th>
+          <th>Saldo final</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in filas %}
+          <tr>
+            <td>{{ r.fecha }}</td>
+            <td style="text-align:right;">{{ formatear_cop(r.ingresos) }}</td>
+            <td style="text-align:right;">{{ formatear_cop(r.gastos) }}</td>
+            <td style="text-align:right;">{{ formatear_cop(r.diferencia) }}</td>
+            <td style="text-align:right;">{{ formatear_cop(r.saldo_inicial) }}</td>
+            <td style="text-align:right;">{{ formatear_cop(r.saldo_final) }}</td>
+          </tr>
+        {% endfor %}
+
+        <tr style="font-weight:bold; background:#f2f2f2;">
+          <td>Total</td>
+          <td style="text-align:right;">{{ formatear_cop(totales.ingresos) }}</td>
+          <td style="text-align:right;">{{ formatear_cop(totales.gastos) }}</td>
+          <td style="text-align:right;">{{ formatear_cop(totales.diferencia) }}</td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  {% else %}
+    <p>Todavía no hay movimientos para resumir.</p>
+  {% endif %}
+
+  <p>
+    <a href="/">⬅ Volver al inicio</a> |
+    <a href="{{ url_for('resumen_mensual') }}">Ver resumen mensual</a>
+  </p>
+</body>
+</html>

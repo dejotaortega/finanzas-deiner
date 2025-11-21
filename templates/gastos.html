@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gastos históricos</title>
+</head>
+<body>
+  <h1>Gastos históricos</h1>
+
+  {% if gastos and gastos|length > 0 %}
+    <table border="1" cellpadding="6" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Gasto</th>
+          <th>Valor</th>
+          <th>Cuenta</th>
+          <th>Saldo en cuenta</th>
+          <th>Saldo inicial</th>
+          <th>Saldo final</th>
+          <th>ID TRAN</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in gastos %}
+          <tr>
+            <td>{{ t.fecha }}</td>
+            <td>{{ t.descripcion }}</td>
+            <td style="text-align:right;">{{ formatear_cop(t.valor_mostrado) }}</td>
+            <td>{{ t.cuenta }}</td>
+            <td style="text-align:right;">{{ formatear_cop(t.saldo_en_cuenta or 0) }}</td>
+            <td style="text-align:right;">{{ formatear_cop(t.saldo_inicial or 0) }}</td>
+            <td style="text-align:right;">{{ formatear_cop(t.saldo_final or 0) }}</td>
+            <td>{{ t.id_transaccion }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Todavía no hay gastos registrados.</p>
+  {% endif %}
+
+  <p>
+    <a href="/">⬅ Volver al inicio</a> |
+    <a href="{{ url_for('transacciones') }}">Ver transacciones de hoy</a>
+  </p>
+</body>
+</html>
