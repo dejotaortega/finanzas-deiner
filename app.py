@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for
 from babel.numbers import format_currency
 
 from datetime import date, timedelta
+import os
+import json
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -68,16 +70,21 @@ def obtener_saldo_inicial_dia(total_cuentas):
 
     return saldo_inicial
 
+# Leer credenciales de variable de entorno
+firebase_cert = os.getenv("FIREBASE_CREDENTIALS")
 
-# 🔥 Inicializar Firebase con tu archivo JSON
-cred = credentials.Certificate(
-    "finanzas-deiner-firebase-adminsdk-fbsvc-9d70b13e78.json"
-)
-firebase_admin.initialize_app(cred)
+if not firebase_admin._apps:
+    if firebase_cert:
+        # El contenido viene como texto JSON en la variable de entorno
+        cred_info = json.loads(firebase_cert)
+        cred = credentials.Certificate(cred_info)
+        firebase_admin.initialize_app(cred)
+    else:
+        # Opción de respaldo (solo local si tienes GOOGLE_APPLICATION_CREDENTIALS configurada)
+        cred = credentials.ApplicationDefault()
+        firebase_admin.initialize_app(cred)
 
-# Cliente Firestore
 db = firestore.client()
-
 # Referencia al documento donde llevamos el contador de transacciones
 contador_trans_ref = db.collection("config").document("transacciones")
 
