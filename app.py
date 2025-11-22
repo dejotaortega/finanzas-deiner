@@ -160,32 +160,10 @@ def cuentas():
         data["id"] = d.id
         lista.append(data)
 
-    # Total de cuentas (solo para mostrar en la tabla)
+    # Total de cuentas (solo suma de saldos de cada cuenta)
     total_cuentas = sum(c.get("saldo_inicial", 0) for c in lista)
 
- # -------------------------------------------------------
-# 1️⃣ Obtener SALDO INICIAL DEL DÍA (corregido)
-# -------------------------------------------------------
-hoy = date.today().isoformat()
-doc_hoy = db.collection("saldos_diarios").document(hoy).get()
-
-if doc_hoy.exists:
-    # Ya había saldo guardado hoy
-    saldo_inicial_dia = doc_hoy.to_dict().get("saldo_inicial", total_cuentas)
-else:
-    # Día nuevo → el saldo inicial ES el saldo actual global
-    saldo_inicial_dia = total_cuentas
-    db.collection("saldos_diarios").document(hoy).set({
-        "fecha": hoy,
-        "saldo_inicial": total_cuentas,
-        "saldo_final": total_cuentas
-    })
-   
-
-    # -------------------------------------------------------
-    # 2️⃣ OBTENER SALDO ACTUAL REAL desde transacciones
-    # (la ÚLTIMA transacción registrada del sistema)
-    # -------------------------------------------------------
+    # 2️⃣ OBTENER SALDO ACTUAL REAL desde la ÚLTIMA transacción
     ult_docs = (
         db.collection("transacciones")
         .order_by("id_transaccion", direction=firestore.Query.DESCENDING)
@@ -193,20 +171,37 @@ else:
         .stream()
     )
 
-    saldo_actual_real = total_cuentas  # por defecto
+    saldo_actual_real = total_cuentas  # por defecto si no hay transacciones
     for d in ult_docs:
         saldo_actual_real = d.to_dict().get("saldo_final", total_cuentas)
 
-    # Mostrar página
-    		return render_template(
-                "cuentas.html",
-                 cuentas=lista,
-                formatear_cop=formatear_cop,
-                total_cuentas=saldo_actual_real,     # 👈 AHORA VIENE DE LA ÚLT TRANSACCIÓN
-                saldo_inicial_dia=saldo_inicial_dia, # 👈 DE saldos_diarios
-                error=error_msg,
-    )
+    # 1️⃣ SALDO INICIAL DEL DÍA (saldos_diarios)
+    #    Si es un día nuevo, el saldo inicial del día = saldo_actual_real
+    hoy = date.today().isoformat()
+    doc_hoy_ref = db.collection("saldos_diarios").document(hoy)
+    doc_hoy = doc_hoy_ref.get()
 
+    if doc_hoy.exists:
+        # Ya había saldo guardado hoy
+        saldo_inicial_dia = doc_hoy.to_dict().get("saldo_inicial", saldo_actual_real)
+    else:
+        # Día nuevo → el saldo inicial ES el saldo actual global
+        saldo_inicial_dia = saldo_actual_real
+        doc_hoy_ref.set({
+            "fecha": hoy,
+            "saldo_inicial": saldo_inicial_dia,
+            "saldo_final": saldo_inicial_dia,
+        })
+
+    # 👇 OJO: este return va alineado con el if, NO dentro del else
+    return render_template(
+        "cuentas.html",
+        cuentas=lista,
+        formatear_cop=formatear_cop,
+        total_cuentas=saldo_actual_real,
+        saldo_inicial_dia=saldo_inicial_dia,
+        error=error_msg,
+    )
 
 
 @app.route("/cuentas/borrar/<id_doc>", methods=["POST"])
