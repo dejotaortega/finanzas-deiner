@@ -1,18 +1,90 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Finanzas de Deiner</title>
-</head>
-<body>
-  <h1>Bienvenido a tu app de finanzas, Deiner 💰</h1>
-  <p>
-  <a href="/cuentas">👉 Ir a Cuentas</a><br>
-  <a href="/transacciones">👉 Ir a Transacciones (hoy)</a><br>
-  <a href="/ingresos">👉 Ingresos históricos</a><br>
-  <a href="/gastos">👉 Gastos históricos</a><br>
-  <a href="/resumen-diario">👉 Resumen diario</a><br>
-  <a href="/resumen-mensual">👉 Resumen mensual</a>
-</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Inicio · Finanzas Deiner{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h1 class="h4 mb-3">Bienvenido, Deiner 👋</h1>
+        <p class="text-muted mb-4">
+          Aquí tenéi tu panel para controlar el billete: cuentas, ingresos,
+          gastos y resúmenes diarios/mensuales.
+        </p>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <a href="{{ url_for('cuentas') }}" class="text-decoration-none">
+              <div class="card border-0 h-100">
+                <div class="card-body">
+                  <div class="badge bg-primary badge-tag mb-2">Paso 1</div>
+                  <h2 class="h5 mb-1">Cuentas</h2>
+                  <p class="text-muted small mb-0">
+                    Configura tus cuentas y saldos iniciales.
+                  </p>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <a
+              href="{{ url_for('transacciones') }}"
+              class="text-decoration-none"
+            >
+              <div class="card border-0 h-100">
+                <div class="card-body">
+                  <div class="badge bg-success badge-tag mb-2">Día a día</div>
+                  <h2 class="h5 mb-1">Transacciones</h2>
+                  <p class="text-muted small mb-0">
+                    Registra ingresos y gastos por fecha de trabajo.
+                  </p>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <a
+              href="{{ url_for('resumen_diario') }}"
+              class="text-decoration-none"
+            >
+              <div class="card border-0 h-100">
+                <div class="card-body">
+                  <div class="badge bg-info badge-tag mb-2">Vista</div>
+                  <h2 class="h5 mb-1">Resúmenes</h2>
+                  <p class="text-muted small mb-0">
+                    Mira cómo va el flujo diario y mensual.
+                  </p>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel lateral -->
+  <div class="col-12 col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Tips de uso rápido</h2>
+        <ul class="small text-muted mb-0">
+          <li>Siempre trabaja con una <strong>fecha de trabajo</strong>.</li>
+          <li>
+            Actualiza los <strong>saldos de las cuentas</strong> desde la
+            pantalla de Cuentas.
+          </li>
+          <li>
+            Cada transacción ajusta el
+            <strong>saldo de la cuenta</strong> y el
+            <strong>saldo global</strong>.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
