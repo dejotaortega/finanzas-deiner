@@ -312,25 +312,15 @@ def transacciones():
                 # Aquí usamos saldo_en_cuenta como saldo actual de la cuenta
                 c_doc.reference.update({"saldo_inicial": saldo_en_cuenta})
 
-            # 3. Saldo global (saldo_inicial / saldo_final)
-            saldo_inicial_global = None
-            ult_docs = (
-                db.collection("transacciones")
-                .order_by("id_transaccion")
-                .stream()
+                       # 3. Saldo global (saldo_inicial / saldo_final)
+            # Ahora SIEMPRE partimos del total real de las cuentas
+            cuentas_docs_global = db.collection("cuentas").stream()
+            saldo_inicial_global = sum(
+                c.to_dict().get("saldo_inicial", 0) for c in cuentas_docs_global
             )
-            for t in ult_docs:
-                data_t = t.to_dict()
-                saldo_inicial_global = data_t.get("saldo_final")
-
-            if saldo_inicial_global is None:
-                cuentas_docs = db.collection("cuentas").stream()
-                total_cuentas = sum(
-                    c.to_dict().get("saldo_inicial", 0) for c in cuentas_docs
-                )
-                saldo_inicial_global = total_cuentas
 
             saldo_final_global = saldo_inicial_global + valor_ajustado
+
 
             # 4. Nuevo ID de transacción
             config_ref = db.collection("config").document("transacciones")
