@@ -198,13 +198,13 @@ else:
         saldo_actual_real = d.to_dict().get("saldo_final", total_cuentas)
 
     # Mostrar página
-    return render_template(
-        "cuentas.html",
-        cuentas=lista,
-        formatear_cop=formatear_cop,
-        total_cuentas=saldo_actual_real,     # 👈 AHORA VIENE DE LA ÚLTIMA TRANSACCIÓN
-        saldo_inicial_dia=saldo_inicial_dia, # 👈 DE saldos_diarios
-        error=error_msg,
+    		return render_template(
+                "cuentas.html",
+                 cuentas=lista,
+                formatear_cop=formatear_cop,
+                total_cuentas=saldo_actual_real,     # 👈 AHORA VIENE DE LA ÚLT TRANSACCIÓN
+                saldo_inicial_dia=saldo_inicial_dia, # 👈 DE saldos_diarios
+                error=error_msg,
     )
 
 
