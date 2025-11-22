@@ -273,7 +273,7 @@ def transacciones():
             else:
                 valor_ajustado = abs(valor)
 
-            # 2. Saldo en la cuenta (saldo_en_cuenta)
+                       # 2. Saldo en la cuenta (saldo_en_cuenta)
             trans_docs = (
                 db.collection("transacciones")
                 .where("cuenta", "==", cuenta)
@@ -300,26 +300,39 @@ def transacciones():
 
             saldo_en_cuenta = saldo_anterior_cuenta + valor_ajustado
 
-            # 2.b Actualizar el saldo de la cuenta en la colección "cuentas"
+            # 3. Saldo global (saldo_inicial / saldo_final)
+            #    OJO: aquí AÚN NO actualizamos la colección "cuentas"
+            #    para no contar dos veces la misma transacción.
+            saldo_inicial_global = None
+
+            ult_docs = (
+                db.collection("transacciones")
+                .order_by("id_transaccion", direction=firestore.Query.DESCENDING)
+                .limit(1)
+                .stream()
+            )
+            for t in ult_docs:
+                saldo_inicial_global = t.to_dict().get("saldo_final")
+
+            if saldo_inicial_global is None:
+                # No hay transacciones con saldo_final (versión vieja) →
+                # usamos la suma de saldos de cuentas ANTES de aplicar esta transacción.
+                cuentas_docs = db.collection("cuentas").stream()
+                saldo_inicial_global = sum(
+                    c.to_dict().get("saldo_inicial", 0) for c in cuentas_docs
+                )
+
+            saldo_final_global = saldo_inicial_global + valor_ajustado
+
+            # 3.b AHORA sí actualizamos el saldo de la cuenta en "cuentas"
             cuentas_query = (
                 db.collection("cuentas")
                 .where("nombre", "==", cuenta)
                 .limit(1)
                 .stream()
             )
-
             for c_doc in cuentas_query:
-                # Aquí usamos saldo_en_cuenta como saldo actual de la cuenta
                 c_doc.reference.update({"saldo_inicial": saldo_en_cuenta})
-
-                       # 3. Saldo global (saldo_inicial / saldo_final)
-            # Ahora SIEMPRE partimos del total real de las cuentas
-            cuentas_docs_global = db.collection("cuentas").stream()
-            saldo_inicial_global = sum(
-                c.to_dict().get("saldo_inicial", 0) for c in cuentas_docs_global
-            )
-
-            saldo_final_global = saldo_inicial_global + valor_ajustado
 
 
             # 4. Nuevo ID de transacción
@@ -360,14 +373,11 @@ def transacciones():
             # Volvemos a la misma fecha de trabajo
             return redirect(url_for("transacciones", fecha=fecha_trabajo))
 
-    # ------------------- GET: mostrar SOLO la fecha de trabajo -------------------
+       # ------------------- GET: mostrar SOLO la fecha de trabajo -------------------
 
     # Cuentas para el combo
     cuentas_docs = db.collection("cuentas").stream()
     cuentas_lista = [d.to_dict() for d in cuentas_docs]
-
-    # Saldo base = suma de saldos iniciales de todas las cuentas
-    saldo_base = sum(c.get("saldo_inicial", 0) for c in cuentas_lista)
 
     # Transacciones SOLO de esa fecha de trabajo
     trans_docs = (
@@ -378,22 +388,20 @@ def transacciones():
     )
 
     trans_lista = []
-    saldo_global = saldo_base
 
     for d in trans_docs:
         data = d.to_dict()
 
+        # valor_mostrado: positivo para ingresos, negativo para gastos
         valor = float(data.get("valor", 0))
         tipo_t = (data.get("tipo", "") or "").lower()
         if tipo_t == "gasto":
-            valor_signed = -abs(valor)
+            data["valor_mostrado"] = -abs(valor)
         else:
-            valor_signed = abs(valor)
+            data["valor_mostrado"] = abs(valor)
 
-        data["valor_mostrado"] = valor_signed
-        data["saldo_inicial_global"] = saldo_global
-        saldo_global = saldo_global + valor_signed
-        data["saldo_final_global"] = saldo_global
+        # saldo_global_mostrado: usar SIEMPRE el saldo_final guardado en la transacción
+        data["saldo_global_mostrado"] = data.get("saldo_final", 0)
 
         trans_lista.append(data)
 
@@ -405,8 +413,9 @@ def transacciones():
         error=error,
         categorias_gasto=CATEGORIAS_GASTO,
         categorias_ingreso=CATEGORIAS_INGRESO,
-        fecha_trabajo=fecha_trabajo,  # se la mandamos al HTML
+        fecha_trabajo=fecha_trabajo,
     )
+
 
 
 # ----------- VISTAS HISTÓRICAS: INGRESOS / GASTOS -----------
