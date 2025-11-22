@@ -68,7 +68,30 @@
                 Resumen mensual
               </a>
             </li>
-          </ul>
+
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle
+              {% if request.path.startswith('/ingresos') or request.path.startswith('/gastos') %}
+                active
+              {% endif %}"
+       href="#" id="navbarHist" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+      Históricos
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="navbarHist">
+      <li>
+        <a class="dropdown-item" href="{{ url_for('ingresos_historicos') }}">
+          Ingresos
+        </a>
+      </li>
+      <li>
+        <a class="dropdown-item" href="{{ url_for('gastos_historicos') }}">
+          Gastos
+        </a>
+      </li>
+    </ul>
+  </li>
+</ul>
+        
 
           <span class="navbar-text small text-light-50">
             Hecho por Deiner 💻

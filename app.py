@@ -254,7 +254,8 @@ def transacciones():
         fecha = fecha_trabajo
         descripcion = request.form.get("descripcion", "").strip()
         valor_str = request.form.get("valor", "0").strip()
-        tipo = request.form.get("tipo", "ingreso")
+        tipo = (request.form.get("tipo", "ingreso") or "").lower()
+
         cuenta = request.form.get("cuenta", "").strip()
         categoria = request.form.get("categoria", "").strip()
 
