@@ -1,53 +1,46 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Resumen diario</title>
-</head>
-<body>
-  <h1>Resumen diario</h1>
+{% extends "base.html" %}
 
-  {% if filas and filas|length > 0 %}
-    <table border="1" cellpadding="6" cellspacing="0">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Ingresos</th>
-          <th>Gastos</th>
-          <th>Diferencia</th>
-          <th>Saldo inicial</th>
-          <th>Saldo final</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in filas %}
-          <tr>
-            <td>{{ r.fecha }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.ingresos) }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.gastos) }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.diferencia) }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.saldo_inicial) }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.saldo_final) }}</td>
-          </tr>
-        {% endfor %}
+{% block title %}Resumen Diario{% endblock %}
 
-        <tr style="font-weight:bold; background:#f2f2f2;">
-          <td>Total</td>
-          <td style="text-align:right;">{{ formatear_cop(totales.ingresos) }}</td>
-          <td style="text-align:right;">{{ formatear_cop(totales.gastos) }}</td>
-          <td style="text-align:right;">{{ formatear_cop(totales.diferencia) }}</td>
-          <td></td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-  {% else %}
-    <p>Todavía no hay movimientos para resumir.</p>
-  {% endif %}
+{% block content %}
+<div class="container py-4">
 
-  <p>
-    <a href="/">⬅ Volver al inicio</a> |
-    <a href="{{ url_for('resumen_mensual') }}">Ver resumen mensual</a>
-  </p>
-</body>
-</html>
+    <h2 class="fw-bold mb-4">Resumen Diario</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Ingresos</th>
+                        <th>Gastos</th>
+                        <th>Diferencia</th>
+                        <th>Saldo Inicial</th>
+                        <th>Saldo Final</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for d in filas %}
+                    <tr>
+                        <td class="fw-semibold">{{ d.fecha }}</td>
+                        <td class="text-success">{{ formatear_cop(d.ingresos) }}</td>
+                        <td class="text-danger">{{ formatear_cop(d.gastos) }}</td>
+                        <td class="{% if d.diferencia>=0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ formatear_cop(d.diferencia) }}
+                        </td>
+                        <td>{{ formatear_cop(d.saldo_inicial) }}</td>
+                        <td>{{ formatear_cop(d.saldo_final) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

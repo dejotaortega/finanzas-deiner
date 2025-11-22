@@ -1,171 +1,110 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Transacciones - Finanzas de Deiner</title>
-</head>
-<body>
-  <h1>Nueva transacción</h1>
+{% extends "base.html" %}
 
+{% block title %}Transacciones{% endblock %}
 
-<!-- Selección de FECHA DE TRABAJO -->
-<form method="get" action="{{ url_for('transacciones') }}">
-  <label>
-    Fecha de trabajo:<br>
-    <input type="date" name="fecha" value="{{ fecha_trabajo }}" required>
-  </label>
-  <button type="submit">Cambiar fecha</button>
-</form>
+{% block content %}
+<div class="container py-4">
 
+    <h2 class="mb-4 fw-bold">Transacciones del día</h2>
 
-  {% if error %}
-    <p style="color:red; font-weight:bold;">
-      {{ error }}
-    </p>
-  {% endif %}
+    <!-- FORM -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="POST" class="row g-3">
 
-  <form method="post">
-   <!-- Esta es la fecha de trabajo que viene del backend -->
-  <input type="hidden" name="fecha_trabajo" value="{{ fecha_trabajo }}">
-  <p>
-    Fecha de trabajo actual:
-    <strong>{{ fecha_trabajo }}</strong>
-  </p>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" name="fecha_trabajo" class="form-control" value="{{ fecha_trabajo }}">
+                </div>
 
-    <label>
-      Descripción:<br>
-      <input type="text" name="descripcion" required>
-    </label>
-    <br><br>
+                <div class="col-md-4">
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="descripcion" class="form-control" placeholder="Descripción">
+                </div>
 
-    <label>
-      Valor:<br>
-      <input type="number" step="0.01" name="valor" required>
-    </label>
-    <br><br>
+                <div class="col-md-2">
+                    <label class="form-label">Valor</label>
+                    <input type="number" step="0.01" name="valor" class="form-control" placeholder="0">
+                </div>
 
-    <label>
-      Cuenta:<br>
-      <select name="cuenta" required>
-        <option value="">-- Selecciona una cuenta --</option>
-        {% for c in cuentas %}
-          <option value="{{ c.nombre }}">{{ c.nombre }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <br><br>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo" class="form-select">
+                        <option value="ingreso">Ingreso</option>
+                        <option value="gasto">Gasto</option>
+                    </select>
+                </div>
 
-    <label>
-      Tipo:<br>
-      <select name="tipo" id="tipo-select" required>
-        <option value="ingreso">Ingreso</option>
-        <option value="gasto">Gasto</option>
-      </select>
-    </label>
-    <br><br>
+                <div class="col-md-4">
+                    <label class="form-label">Cuenta</label>
+                    <select name="cuenta" class="form-select">
+                        {% for c in cuentas %}
+                        <option value="{{ c.nombre }}">{{ c.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-    <label>
-      Categoría:<br>
-      <select name="categoria" id="categoria-select" required>
-        <!-- Las opciones se llenan con JavaScript según el tipo -->
-      </select>
-    </label>
-    <br><br>
+                <div class="col-md-4">
+                    <label class="form-label">Categoría</label>
+                    <select name="categoria" class="form-select">
+                        <optgroup label="Ingresos">
+                            {% for cat in categorias_ingreso %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="Gastos">
+                            {% for cat in categorias_gasto %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </div>
 
-    <button type="submit">Guardar transacción</button>
-  </form>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-primary w-100">Agregar</button>
+                </div>
 
-  <hr>
+            </form>
+        </div>
+    </div>
 
-  <h2>Listado de transacciones</h2>
+    <!-- TABLA -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h4 class="fw-semibold mb-3">Listado de transacciones</h4>
 
-  {% if transacciones and transacciones|length > 0 %}
-    <table border="1" cellpadding="6" cellspacing="0">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Fecha</th>
-      <th>Descripción</th>
-      <th>Cuenta</th>
-      <th>Tipo</th>
-      <th>Categoría</th>
-      <th>Valor</th>
-      <th>Saldo inicial</th>
-      <th>Saldo final</th>
-      <th>Saldo en cuenta</th>
-    </tr>
-  </thead>
-  <tbody>
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Descripción</th>
+                        <th>Tipo</th>
+                        <th>Cuenta</th>
+                        <th>Categoría</th>
+                        <th>Valor</th>
+                        <th>Saldo global</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transacciones %}
+                    <tr>
+                        <td>{{ t.id_transaccion }}</td>
+                        <td>{{ t.descripcion }}</td>
+                        <td>
+                            <span class="badge {% if t.tipo=='gasto' %}bg-danger{% else %}bg-success{% endif %}">
+                                {{ t.tipo }}
+                            </span>
+                        </td>
+                        <td>{{ t.cuenta }}</td>
+                        <td>{{ t.categoria }}</td>
+                        <td>{{ formatear_cop(t.valor_mostrado) }}</td>
+                        <td>{{ formatear_cop(t.saldo_final_global) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-        {% for t in transacciones %}
-          <tr>
-            <td>{{ t.id_transaccion }}</td>
-            <td>{{ t.fecha }}</td>
-            <td>{{ t.descripcion }}</td>
-            <td>{{ t.cuenta }}</td>
-            <td>{{ t.tipo|capitalize }}</td>
-           
-            <td>{{ t.categoria }}</td>
-            <!-- Valor con signo ya calculado -->
-      <td style="text-align:right;">
-        {{ formatear_cop(t.valor_mostrado) }}
-      </td>
-
-      <!-- Saldo inicial global -->
-      <td style="text-align:right;">
-        {{ formatear_cop(t.saldo_inicial_global) }}
-      </td>
-
-      <!-- Saldo final global -->
-      <td style="text-align:right;">
-        {{ formatear_cop(t.saldo_final_global) }}
-      </td>
-
-      <!-- Saldo en la cuenta específica -->
-      <td style="text-align:right;">
-        {{ formatear_cop(t.saldo_en_cuenta or 0) }}
-      </td>
-    </tr>
-  {% endfor %}
-
-      </tbody>
-    </table>
-  {% else %}
-    <p>Todavía no has registrado transacciones.</p>
-  {% endif %}
-
-  <p>
-    <a href="/">⬅ Volver al inicio</a> |
-    <a href="{{ url_for('cuentas') }}">Ir a Cuentas</a>
-  </p>
-
-  <!-- Script para cambiar categorías según tipo (Ingreso / Gasto) -->
-  <script>
-    const categoriasGasto = {{ categorias_gasto | tojson }};
-    const categoriasIngreso = {{ categorias_ingreso | tojson }};
-
-    function actualizarCategorias() {
-      const tipo = document.getElementById('tipo-select').value;
-      const select = document.getElementById('categoria-select');
-      const lista = (tipo === 'gasto') ? categoriasGasto : categoriasIngreso;
-
-      // Limpiar opciones actuales
-      select.innerHTML = "";
-
-      // Agregar nuevas opciones
-      lista.forEach(function(texto) {
-        const opt = document.createElement('option');
-        opt.value = texto;
-        opt.textContent = texto;
-        select.appendChild(opt);
-      });
-    }
-
-    // Cuando cargue la página, llenamos según el tipo por defecto
-    window.addEventListener('DOMContentLoaded', function () {
-      actualizarCategorias();
-      document.getElementById('tipo-select').addEventListener('change', actualizarCategorias);
-    });
-  </script>
-</body>
-</html>
+</div>
+{% endblock %}

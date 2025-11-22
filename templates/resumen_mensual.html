@@ -1,53 +1,46 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Resumen mensual</title>
-</head>
-<body>
-  <h1>Resumen mensual</h1>
+{% extends "base.html" %}
 
-  {% if filas and filas|length > 0 %}
-    <table border="1" cellpadding="6" cellspacing="0">
-      <thead>
-        <tr>
-          <th>Mes (AAAA-MM)</th>
-          <th>Ingresos</th>
-          <th>Gastos</th>
-          <th>Diferencia</th>
-          <th>Saldo inicial</th>
-          <th>Saldo final</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in filas %}
-          <tr>
-            <td>{{ r.mes }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.ingresos) }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.gastos) }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.diferencia) }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.saldo_inicial) }}</td>
-            <td style="text-align:right;">{{ formatear_cop(r.saldo_final) }}</td>
-          </tr>
-        {% endfor %}
+{% block title %}Resumen Mensual{% endblock %}
 
-        <tr style="font-weight:bold; background:#f2f2f2;">
-          <td>Total</td>
-          <td style="text-align:right;">{{ formatear_cop(totales.ingresos) }}</td>
-          <td style="text-align:right;">{{ formatear_cop(totales.gastos) }}</td>
-          <td style="text-align:right;">{{ formatear_cop(totales.diferencia) }}</td>
-          <td></td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-  {% else %}
-    <p>Todavía no hay movimientos para resumir.</p>
-  {% endif %}
+{% block content %}
+<div class="container py-4">
 
-  <p>
-    <a href="/">⬅ Volver al inicio</a> |
-    <a href="{{ url_for('resumen_diario') }}">Ver resumen diario</a>
-  </p>
-</body>
-</html>
+    <h2 class="fw-bold mb-4">Resumen Mensual</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mes</th>
+                        <th>Ingresos</th>
+                        <th>Gastos</th>
+                        <th>Diferencia</th>
+                        <th>Saldo Inicial</th>
+                        <th>Saldo Final</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for m in filas %}
+                    <tr>
+                        <td class="fw-semibold">{{ m.mes }}</td>
+                        <td class="text-success">{{ formatear_cop(m.ingresos) }}</td>
+                        <td class="text-danger">{{ formatear_cop(m.gastos) }}</td>
+                        <td class="{% if m.diferencia>=0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ formatear_cop(m.diferencia) }}
+                        </td>
+                        <td>{{ formatear_cop(m.saldo_inicial) }}</td>
+                        <td>{{ formatear_cop(m.saldo_final) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
