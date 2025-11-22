@@ -1,95 +1,131 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Cuentas - Finanzas de Deiner</title>
-</head>
-<body>
-  <h1>Cuentas</h1>
-  {% if error %}
-  <p style="color: red; font-weight: bold;">
-    {{ error }}
-  </p>
-{% endif %}
+{% extends "base.html" %}
 
-  <h2>Resumen del día</h2>
-  <p>Saldo inicial del día: {{ formatear_cop(saldo_inicial_dia) }}</p>
-<p>Saldo actual (total cuentas): {{ formatear_cop(total_cuentas) }}</p>
-  <hr>
+{% block title %}Cuentas{% endblock %}
 
+{% block content %}
+<div class="container py-4">
 
- <!-- Formulario para crear una cuenta -->
-  <h2>Nueva cuenta</h2>
-  <form method="post">
-    <label>
-      Nombre de la cuenta:<br>
-      <input type="text" name="nombre" required>
-    </label>
-    <br><br>
+    <h2 class="fw-bold mb-4">Cuentas Bancarias / Efectivo</h2>
 
-    <label>
-      Saldo inicial:<br>
-      <input type="number" name="saldo_inicial" step="0.01" value="0">
-    </label>
-    <br><br>
-    <button type="submit">Guardar cuenta</button>
-  </form>
+    <!-- Tarjetas de Totales -->
+    <div class="row g-3 mb-4">
 
-  <hr>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-1">Saldo Inicial del Día</h6>
+                    <h4 class="fw-bold">{{ formatear_cop(saldo_inicial_dia) }}</h4>
+                </div>
+            </div>
+        </div>
 
-  <!-- Lista de cuentas creadas -->
-    <h2>Lista de cuentas</h2>
-{% if cuentas and cuentas|length > 0 %}
-  <table border="1" cellpadding="6" cellspacing="0">
-    <thead>
-      <tr>
-        <th>Cuenta</th>
-        <th>Saldo inicial</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for c in cuentas %}
-        <tr>
-          <td>{{ c.nombre }}</td>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-1">Saldo Actual (Global)</h6>
+                    <h4 class="fw-bold text-primary">{{ formatear_cop(total_cuentas) }}</h4>
+                </div>
+            </div>
+        </div>
 
-          <!-- Celda del saldo, SOLO un input con formato -->
-          <td style="text-align:right;">
-            <form method="post" action="{{ url_for('editar_cuenta', id_doc=c.id) }}">
-              <input type="text"
-                     name="saldo_inicial"
-                     value="{{ formatear_cop(c.saldo_inicial) }}"
-                     style="width:140px; text-align:right;">
-              <button type="submit">💾 Guardar</button>
+    </div>
+
+    <!-- FORMULARIO PARA AGREGAR CUENTA -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="fw-semibold mb-3">Agregar Cuenta</h4>
+
+            {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nombre de la cuenta</label>
+                    <input type="text" name="nombre" class="form-control" placeholder="Ej: Nequi, Efectivo, Bancolombia">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Saldo Inicial</label>
+                    <input type="number" step="0.01" name="saldo_inicial" class="form-control" placeholder="0">
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100">Agregar</button>
+                </div>
             </form>
-          </td>
+        </div>
+    </div>
 
-          <!-- Botón de borrar -->
-          <td>
-            <form method="post" action="{{ url_for('borrar_cuenta', id_doc=c.id) }}" style="display:inline;">
-              <button type="submit"
-                      onclick="return confirm('¿Seguro que quieres borrar esta cuenta?');">
-                🗑 Borrar
-              </button>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
+    <!-- TABLA DE CUENTAS -->
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-      <!-- Fila del total -->
-      <tr style="font-weight: bold; background: #f2f2f2;">
-        <th>Total general</th>
-    <th>{{ formatear_cop(total_cuentas) }}</th>
-    <th></th>
-      </tr>
-    </tbody>
-  </table>
-{% else %}
-  <p>Todavía no has creado cuentas.</p>
-{% endif %}
+            <h4 class="fw-semibold mb-3">Lista de Cuentas</h4>
 
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Saldo Actual</th>
+                        <th style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
 
+                <tbody>
+                    {% for c in cuentas %}
+                    <tr>
+                        <td class="fw-semibold">{{ c.nombre }}</td>
+                        <td class="fw-bold">{{ formatear_cop(c.saldo_inicial) }}</td>
 
-  <p><a href="/">⬅ Volver al inicio</a></p>
-</body>
-</html>
+                        <td>
+                            <!-- Botón editar (abre collapse) -->
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#edit{{ c.id }}">
+                                Editar
+                            </button>
+
+                            <!-- Eliminar -->
+                            <form method="POST" action="{{ url_for('borrar_cuenta', id_doc=c.id) }}"
+                                    class="d-inline">
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('¿Eliminar cuenta?');">
+                                    Borrar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <!-- FORM EDITAR -->
+                    <tr class="collapse" id="edit{{ c.id }}">
+                        <td colspan="3">
+                            <div class="card card-body mt-2">
+
+                                <form method="POST" action="{{ url_for('editar_cuenta', id_doc=c.id) }}" class="row g-3">
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Saldo Actual</label>
+                                        <input type="text" name="saldo_inicial" 
+                                               class="form-control"
+                                               value="{{ c.saldo_inicial }}">
+                                    </div>
+
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <button class="btn btn-success w-100">Guardar Cambios</button>
+                                    </div>
+
+                                </form>
+
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
