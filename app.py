@@ -163,14 +163,24 @@ def cuentas():
     # Total de cuentas (solo para mostrar en la tabla)
     total_cuentas = sum(c.get("saldo_inicial", 0) for c in lista)
 
-    # -------------------------------------------------------
-    # 1️⃣ Obtener saldo_inicial_dia desde saldos_diarios
-    # -------------------------------------------------------
-    hoy = date.today().isoformat()
-    doc_hoy = db.collection("saldos_diarios").document(hoy).get()
-    saldo_inicial_dia = 0
-    if doc_hoy.exists:
-        saldo_inicial_dia = doc_hoy.to_dict().get("saldo_inicial", 0)
+ # -------------------------------------------------------
+# 1️⃣ Obtener SALDO INICIAL DEL DÍA (corregido)
+# -------------------------------------------------------
+hoy = date.today().isoformat()
+doc_hoy = db.collection("saldos_diarios").document(hoy).get()
+
+if doc_hoy.exists:
+    # Ya había saldo guardado hoy
+    saldo_inicial_dia = doc_hoy.to_dict().get("saldo_inicial", total_cuentas)
+else:
+    # Día nuevo → el saldo inicial ES el saldo actual global
+    saldo_inicial_dia = total_cuentas
+    db.collection("saldos_diarios").document(hoy).set({
+        "fecha": hoy,
+        "saldo_inicial": total_cuentas,
+        "saldo_final": total_cuentas
+    })
+   
 
     # -------------------------------------------------------
     # 2️⃣ OBTENER SALDO ACTUAL REAL desde transacciones
