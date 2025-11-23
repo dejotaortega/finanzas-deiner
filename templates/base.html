@@ -96,6 +96,9 @@
           <span class="navbar-text small text-light-50">
             Hecho por Deiner 💻
           </span>
+            {% if session.logged %}
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Salir</a>
+            {% endif %}
         </div>
       </div>
     </nav>

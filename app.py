@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 from babel.numbers import format_currency
 
 from datetime import date, timedelta
@@ -9,6 +9,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 app = Flask(__name__)
+
+app.secret_key = "Deiner88@"  # Puedes cambiarla
 
 # Categorías de gastos e ingresos
 CATEGORIAS_GASTO = [
@@ -112,13 +114,47 @@ def obtener_siguiente_id_transaccion(transaction):
     transaction.update(contador_trans_ref, {"contador": nuevo})
     return nuevo
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+
+    if request.method == "POST":
+        usuario = request.form.get("usuario")
+        password = request.form.get("password")
+
+        # ------ CREDENCIALES ------
+        if usuario == "deiner" and password == "Deiner88@": 
+            session["logged"] = True
+            return redirect(url_for("home"))
+        else:
+            error = "Usuario o contraseña incorrectos"
+
+    return render_template("login.html", error=error)
+
+from functools import wraps
+
+def login_requerido(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not session.get("logged"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return wrapper
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
 
 @app.route("/")
+@login_requerido
 def home():
     return render_template("home.html")
 
 
 @app.route("/cuentas", methods=["GET", "POST"])
+@login_requerido
 def cuentas():
     error_msg = None
 
@@ -239,6 +275,7 @@ def editar_cuenta(id_doc):
 
 
 @app.route("/transacciones", methods=["GET", "POST"])
+@login_requerido
 def transacciones():
     error = None
 
@@ -423,6 +460,7 @@ def transacciones():
 
 
 @app.route("/ingresos")
+@login_requerido
 def ingresos_historicos():
     docs = (
         db.collection("transacciones")
@@ -448,6 +486,7 @@ def ingresos_historicos():
 
 
 @app.route("/gastos")
+@login_requerido
 def gastos_historicos():
     docs = (
         db.collection("transacciones")
@@ -547,6 +586,7 @@ def calcular_resumen_diario():
 
 
 @app.route("/resumen-diario")
+@login_requerido
 def resumen_diario():
     resumen, totales = calcular_resumen_diario()
     return render_template(
@@ -558,6 +598,7 @@ def resumen_diario():
 
 
 @app.route("/resumen-mensual")
+@login_requerido
 def resumen_mensual():
     resumen_diario, _ = calcular_resumen_diario()
 
