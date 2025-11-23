@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Históricos{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <h2 class="mb-3 fw-bold">Históricos</h2>
+  <p class="text-muted mb-4">
+    Aquí podéi revisar el historial de ingresos, gastos y los resúmenes diarios y mensuales.
+  </p>
+
+  <div class="row g-3">
+
+    <!-- Ingresos -->
+    <div class="col-md-3">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <span class="badge bg-success mb-2">Ingresos</span>
+          <h5 class="card-title">Histórico de ingresos</h5>
+          <p class="card-text text-muted small">
+            Lista de todos los ingresos registrados en el sistema.
+          </p>
+          <a href="{{ url_for('ingresos_historicos') }}" class="btn btn-outline-success btn-sm">
+            Ver ingresos
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gastos -->
+    <div class="col-md-3">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <span class="badge bg-danger mb-2">Gastos</span>
+          <h5 class="card-title">Histórico de gastos</h5>
+          <p class="card-text text-muted small">
+            Lista de todos los gastos registrados en el sistema.
+          </p>
+          <a href="{{ url_for('gastos_historicos') }}" class="btn btn-outline-danger btn-sm">
+            Ver gastos
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen diario -->
+    <div class="col-md-3">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <span class="badge bg-primary mb-2">Resumen</span>
+          <h5 class="card-title">Resumen diario</h5>
+          <p class="card-text text-muted small">
+            Flujo de ingresos y gastos agrupado por día.
+          </p>
+          <a href="{{ url_for('resumen_diario') }}" class="btn btn-outline-primary btn-sm">
+            Ver resumen diario
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen mensual -->
+    <div class="col-md-3">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <span class="badge bg-primary mb-2">Resumen</span>
+          <h5 class="card-title">Resumen mensual</h5>
+          <p class="card-text text-muted small">
+            Resumen consolidado por mes con ingresos, gastos y diferencia.
+          </p>
+          <a href="{{ url_for('resumen_mensual') }}" class="btn btn-outline-primary btn-sm">
+            Ver resumen mensual
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

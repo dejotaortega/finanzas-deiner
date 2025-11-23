@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Análisis de movimientos{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="fw-bold mb-4">Análisis de Ingresos y Gastos</h2>
+
+  <!-- FORMULARIO DE FILTRO -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="GET" class="row g-3">
+
+        <!-- Tipo de movimiento -->
+        <div class="col-md-3">
+          <label class="form-label">Tipo</label>
+          <select name="tipo" class="form-select">
+            <option value="todos" {% if tipo=='todos' %}selected{% endif %}>Ingresos y Gastos</option>
+            <option value="ingreso" {% if tipo=='ingreso' %}selected{% endif %}>Solo Ingresos</option>
+            <option value="gasto" {% if tipo=='gasto' %}selected{% endif %}>Solo Gastos</option>
+          </select>
+        </div>
+
+        <!-- Periodo principal -->
+        <div class="col-md-3">
+          <label class="form-label">Período</label>
+          <select name="periodo" class="form-select">
+            <option value="este_mes" {% if periodo=='este_mes' %}selected{% endif %}>Este mes</option>
+            <option value="mes_anterior" {% if periodo=='mes_anterior' %}selected{% endif %}>Mes anterior</option>
+            <option value="ultimos_7_dias" {% if periodo=='ultimos_7_dias' %}selected{% endif %}>Últimos 7 días</option>
+            <option value="ultimos_30_dias" {% if periodo=='ultimos_30_dias' %}selected{% endif %}>Últimos 30 días</option>
+            <option value="este_anio" {% if periodo=='este_anio' %}selected{% endif %}>Este año</option>
+            <option value="anio_anterior" {% if periodo=='anio_anterior' %}selected{% endif %}>Año anterior</option>
+            <option value="personalizado" {% if periodo=='personalizado' %}selected{% endif %}>Personalizado</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Desde</label>
+          <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Hasta</label>
+          <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+        </div>
+
+        <!-- Categorías (multi-select) -->
+        <div class="col-md-6">
+          <label class="form-label">Categorías (opcional)</label>
+          <select name="categorias" class="form-select" multiple size="5">
+            {% for cat in categorias_todas %}
+            <option value="{{ cat }}" {% if cat in categorias_seleccionadas %}selected{% endif %}>
+              {{ cat }}
+            </option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Usa Ctrl + clic para seleccionar varias.</div>
+        </div>
+
+        <!-- Período de comparación -->
+        <div class="col-md-3">
+          <label class="form-label">Comparar con</label>
+          <select name="periodo_comp" class="form-select">
+            <option value="">(Sin comparación)</option>
+            <option value="este_mes" {% if periodo_comp=='este_mes' %}selected{% endif %}>Este mes</option>
+            <option value="mes_anterior" {% if periodo_comp=='mes_anterior' %}selected{% endif %}>Mes anterior</option>
+            <option value="ultimos_7_dias" {% if periodo_comp=='ultimos_7_dias' %}selected{% endif %}>Últimos 7 días</option>
+            <option value="ultimos_30_dias" {% if periodo_comp=='ultimos_30_dias' %}selected{% endif %}>Últimos 30 días</option>
+            <option value="este_anio" {% if periodo_comp=='este_anio' %}selected{% endif %}>Este año</option>
+            <option value="anio_anterior" {% if periodo_comp=='anio_anterior' %}selected{% endif %}>Año anterior</option>
+            <option value="personalizado" {% if periodo_comp=='personalizado' %}selected{% endif %}>Personalizado</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Desde (comp.)</label>
+          <input type="date" name="fecha_desde_comp" class="form-control" value="{{ fecha_desde_comp }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Hasta (comp.)</label>
+          <input type="date" name="fecha_hasta_comp" class="form-control" value="{{ fecha_hasta_comp }}">
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-primary">Aplicar filtros</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- RESULTADOS -->
+  <div class="row g-4">
+    <!-- Período principal -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h3 class="h6 mb-3">
+            Período principal
+            <small class="text-muted d-block">
+              {{ resumen_principal.desde }} → {{ resumen_principal.hasta }}
+            </small>
+          </h3>
+
+          <div class="row text-center mb-3">
+            <div class="col-4">
+              <div class="small text-muted">Ingresos</div>
+              <div class="fw-bold text-success">
+                {{ formatear_cop(resumen_principal.total_ingresos) }}
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="small text-muted">Gastos</div>
+              <div class="fw-bold text-danger">
+                {{ formatear_cop(resumen_principal.total_gastos) }}
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="small text-muted">Diferencia</div>
+              <div class="fw-bold {% if resumen_principal.diferencia >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {{ formatear_cop(resumen_principal.diferencia) }}
+              </div>
+            </div>
+          </div>
+
+          <p class="small text-muted mb-2">
+            {{ resumen_principal.cantidad }} movimiento(s) encontrados.
+          </p>
+
+          <div class="table-responsive" style="max-height: 320px; overflow-y:auto;">
+            <table class="table table-sm align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th>Tipo</th>
+                  <th>Cuenta</th>
+                  <th>Categoría</th>
+                  <th class="text-end">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for t in trans_principal %}
+                <tr>
+                  <td>{{ t.fecha }}</td>
+                  <td>{{ t.descripcion }}</td>
+                  <td>
+                    <span class="badge {% if t.tipo=='gasto' %}bg-danger{% else %}bg-success{% endif %}">
+                      {{ t.tipo }}
+                    </span>
+                  </td>
+                  <td>{{ t.cuenta }}</td>
+                  <td>{{ t.categoria }}</td>
+                  <td class="text-end">
+                    {{ formatear_cop(t.valor_mostrado) }}
+                  </td>
+                </tr>
+                {% endfor %}
+                {% if not trans_principal %}
+                <tr>
+                  <td colspan="6" class="text-muted text-center small">
+                    No hay movimientos en este período con esos filtros.
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Período de comparación -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h3 class="h6 mb-3">
+            Período de comparación
+            {% if resumen_comp %}
+            <small class="text-muted d-block">
+              {{ resumen_comp.desde }} → {{ resumen_comp.hasta }}
+            </small>
+            {% else %}
+            <small class="text-muted d-block">
+              (No se seleccionó período de comparación)
+            </small>
+            {% endif %}
+          </h3>
+
+          {% if resumen_comp %}
+          <div class="row text-center mb-3">
+            <div class="col-4">
+              <div class="small text-muted">Ingresos</div>
+              <div class="fw-bold text-success">
+                {{ formatear_cop(resumen_comp.total_ingresos) }}
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="small text-muted">Gastos</div>
+              <div class="fw-bold text-danger">
+                {{ formatear_cop(resumen_comp.total_gastos) }}
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="small text-muted">Diferencia</div>
+              <div class="fw-bold {% if resumen_comp.diferencia >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {{ formatear_cop(resumen_comp.diferencia) }}
+              </div>
+            </div>
+          </div>
+
+          <p class="small text-muted mb-2">
+            {{ resumen_comp.cantidad }} movimiento(s) encontrados.
+          </p>
+
+          <!-- Comparación numérica simple -->
+          <div class="small mb-3">
+            <strong>Comparación rápida:</strong><br>
+            Ingresos: {{ formatear_cop(resumen_principal.total_ingresos - resumen_comp.total_ingresos) }} (dif.)<br>
+            Gastos: {{ formatear_cop(resumen_principal.total_gastos - resumen_comp.total_gastos) }} (dif.)<br>
+            Resultado: {{ formatear_cop(resumen_principal.diferencia - resumen_comp.diferencia) }} (dif.)
+          </div>
+
+          <div class="table-responsive" style="max-height: 320px; overflow-y:auto;">
+            <table class="table table-sm align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th>Tipo</th>
+                  <th>Cuenta</th>
+                  <th>Categoría</th>
+                  <th class="text-end">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for t in trans_comp %}
+                <tr>
+                  <td>{{ t.fecha }}</td>
+                  <td>{{ t.descripcion }}</td>
+                  <td>
+                    <span class="badge {% if t.tipo=='gasto' %}bg-danger{% else %}bg-success{% endif %}">
+                      {{ t.tipo }}
+                    </span>
+                  </td>
+                  <td>{{ t.cuenta }}</td>
+                  <td>{{ t.categoria }}</td>
+                  <td class="text-end">
+                    {{ formatear_cop(t.valor_mostrado) }}
+                  </td>
+                </tr>
+                {% endfor %}
+                {% if not trans_comp %}
+                <tr>
+                  <td colspan="6" class="text-muted text-center small">
+                    No hay movimientos en el período de comparación.
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0 small">
+            Define un período de comparación en el formulario de arriba para ver esta sección.
+          </p>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

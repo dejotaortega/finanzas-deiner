@@ -41,8 +41,13 @@ CATEGORIAS_INGRESO = [
 
 # Función para formatear moneda COP
 def formatear_cop(valor):
-    return format_currency(valor, "COP", locale="es_CO")
-
+    if valor is None:
+        valor = 0
+    try:
+        return format_currency(valor, 'COP', locale='es_CO')
+    except Exception:
+        # Por si llega algo raro, no revienta
+        return f"${valor:,.0f}"
 
 def obtener_saldo_inicial_dia(total_cuentas):
     """
@@ -150,7 +155,164 @@ def logout():
 @app.route("/")
 @login_requerido
 def home():
-    return render_template("home.html")
+    # -------- 1) SALDO GLOBAL ACTUAL --------
+    ult_docs = (
+        db.collection("transacciones")
+        .order_by("id_transaccion", direction=firestore.Query.DESCENDING)
+        .limit(1)
+        .stream()
+    )
+
+    total_global = 0
+    for d in ult_docs:
+        total_global = d.to_dict().get("saldo_final", 0)
+
+    # Si no hay transacciones aún → suma de saldos de las cuentas
+    if total_global == 0:
+        cuentas_docs_tmp = db.collection("cuentas").stream()
+        total_global = sum(c.to_dict().get("saldo_inicial", 0) for c in cuentas_docs_tmp)
+
+    # -------- 2) RESUMEN DEL DÍA --------
+    hoy = date.today().isoformat()
+
+    trans_hoy = (
+        db.collection("transacciones")
+        .where("fecha", "==", hoy)
+        .stream()
+    )
+
+    ingresos_hoy = 0.0
+    gastos_hoy = 0.0
+
+    for t in trans_hoy:
+        data = t.to_dict()
+        valor = float(data.get("valor", 0))
+        if valor > 0:
+            ingresos_hoy += valor
+        else:
+            gastos_hoy += abs(valor)
+
+    diferencia_hoy = ingresos_hoy - gastos_hoy
+
+    # -------- 3) RESUMEN DEL MES ACTUAL --------
+    mes_actual = hoy[:7]  # YYYY-MM
+
+    trans_mes = db.collection("transacciones").stream()
+
+    ingresos_mes = 0.0
+    gastos_mes = 0.0
+
+    for t in trans_mes:
+        data = t.to_dict()
+        fecha_t = data.get("fecha")
+        if not fecha_t:
+            continue
+
+        if fecha_t.startswith(mes_actual):
+            valor = float(data.get("valor", 0))
+            if valor > 0:
+                ingresos_mes += valor
+            else:
+                gastos_mes += abs(valor)
+
+    diferencia_mes = ingresos_mes - gastos_mes
+
+    # -------- 4) DATOS PARA GRÁFICA MENSUAL --------
+    resumen_diario, _ = calcular_resumen_diario()
+
+    resumen_mes_dict = {}
+    for r in resumen_diario:
+        mes = r["fecha"][:7]  # YYYY-MM
+        if mes not in resumen_mes_dict:
+            resumen_mes_dict[mes] = {"ingresos": 0.0, "gastos": 0.0}
+        resumen_mes_dict[mes]["ingresos"] += r["ingresos"]
+        resumen_mes_dict[mes]["gastos"] += r["gastos"]
+
+    meses_labels = sorted(resumen_mes_dict.keys())
+    ingresos_mes_chart = [resumen_mes_dict[m]["ingresos"] for m in meses_labels]
+    gastos_mes_chart = [resumen_mes_dict[m]["gastos"] for m in meses_labels]
+
+    meses_labels_json = json.dumps(meses_labels)
+    ingresos_mes_chart_json = json.dumps(ingresos_mes_chart)
+    gastos_mes_chart_json = json.dumps(gastos_mes_chart)
+
+    # -------- 5) GASTOS POR CATEGORÍA (MES ACTUAL) --------
+    from collections import defaultdict
+    gastos_por_categoria = defaultdict(float)
+
+    trans_mes_cat = db.collection("transacciones").stream()
+    for t in trans_mes_cat:
+        data = t.to_dict()
+        fecha_t = data.get("fecha")
+        if not fecha_t or not fecha_t.startswith(mes_actual):
+            continue
+
+        tipo_t = (data.get("tipo", "") or "").lower()
+        if tipo_t != "gasto":
+            continue
+
+        categoria = data.get("categoria", "Sin categoría")
+        valor = abs(float(data.get("valor", 0)))
+        gastos_por_categoria[categoria] += valor
+
+    cat_labels = list(gastos_por_categoria.keys())
+    cat_values = list(gastos_por_categoria.values())
+
+    cat_labels_json = json.dumps(cat_labels)
+    cat_values_json = json.dumps(cat_values)
+
+    # -------- 6) ÚLTIMAS TRANSACCIONES --------
+    ult_trans_docs = (
+        db.collection("transacciones")
+        .order_by("id_transaccion", direction=firestore.Query.DESCENDING)
+        .limit(5)
+        .stream()
+    )
+
+    ultimas_transacciones = []
+    for d in ult_trans_docs:
+        data = d.to_dict()
+        valor = float(data.get("valor", 0))
+        tipo_t = (data.get("tipo", "") or "").lower()
+        if tipo_t == "gasto":
+            data["valor_mostrado"] = -abs(valor)
+        else:
+            data["valor_mostrado"] = abs(valor)
+        ultimas_transacciones.append(data)
+
+    # -------- 7) SALDOS POR CUENTA PARA EL DASHBOARD --------
+    cuentas_docs = db.collection("cuentas").stream()
+    cuentas_dashboard = []
+    for c in cuentas_docs:
+        info = c.to_dict()
+        cuentas_dashboard.append({
+            "nombre": info.get("nombre", ""),
+            "saldo": info.get("saldo_inicial", 0),
+        })
+
+    # -------- 8) RENDER --------
+    return render_template(
+        "home.html",
+        total_global=total_global,
+        ingresos_hoy=ingresos_hoy,
+        gastos_hoy=gastos_hoy,
+        diferencia_hoy=diferencia_hoy,
+        ingresos_mes=ingresos_mes,
+        gastos_mes=gastos_mes,
+        diferencia_mes=diferencia_mes,
+        meses_labels_json=meses_labels_json,
+        ingresos_mes_chart_json=ingresos_mes_chart_json,
+        gastos_mes_chart_json=gastos_mes_chart_json,
+        cat_labels_json=cat_labels_json,
+        cat_values_json=cat_values_json,
+        ultimas_transacciones=ultimas_transacciones,
+        cuentas_dashboard=cuentas_dashboard,   # 👈 AQUÍ VAN LAS CUENTAS
+    )
+
+@app.route("/historicos")
+@login_requerido
+def historicos():
+    return render_template("historicos.html")
 
 
 @app.route("/cuentas", methods=["GET", "POST"])
@@ -584,6 +746,119 @@ def calcular_resumen_diario():
 
     return resumen, totales
 
+def calcular_rango_fechas(periodo, fecha_desde_str=None, fecha_hasta_str=None):
+    """
+    Devuelve (desde_iso, hasta_iso) según el tipo de periodo:
+    - 'personalizado': usa las fechas que vengan del formulario
+    - 'ultimos_7_dias'
+    - 'ultimos_30_dias'
+    - 'este_mes'
+    - 'mes_anterior'
+    - 'este_anio'
+    - 'anio_anterior'
+    """
+    hoy = date.today()
+
+    if periodo == "personalizado":
+        if fecha_desde_str and fecha_hasta_str:
+            return fecha_desde_str, fecha_hasta_str
+        # si no mandan nada, por defecto últimos 30 días
+        desde = hoy - timedelta(days=30)
+        return desde.isoformat(), hoy.isoformat()
+
+    if periodo == "ultimos_7_dias":
+        desde = hoy - timedelta(days=7)
+        return desde.isoformat(), hoy.isoformat()
+
+    if periodo == "ultimos_30_dias":
+        desde = hoy - timedelta(days=30)
+        return desde.isoformat(), hoy.isoformat()
+
+    if periodo == "este_mes":
+        desde = hoy.replace(day=1)
+        # hasta = hoy
+        return desde.isoformat(), hoy.isoformat()
+
+    if periodo == "mes_anterior":
+        primer_dia_mes_actual = hoy.replace(day=1)
+        ultimo_dia_mes_anterior = primer_dia_mes_actual - timedelta(days=1)
+        desde = ultimo_dia_mes_anterior.replace(day=1)
+        hasta = ultimo_dia_mes_anterior
+        return desde.isoformat(), hasta.isoformat()
+
+    if periodo == "este_anio":
+        desde = hoy.replace(month=1, day=1)
+        return desde.isoformat(), hoy.isoformat()
+
+    if periodo == "anio_anterior":
+        desde = hoy.replace(year=hoy.year - 1, month=1, day=1)
+        hasta = hoy.replace(year=hoy.year - 1, month=12, day=31)
+        return desde.isoformat(), hasta.isoformat()
+
+    # Por defecto: últimos 30 días
+    desde = hoy - timedelta(days=30)
+    return desde.isoformat(), hoy.isoformat()
+
+
+def filtrar_y_resumir(transacciones, tipo, desde_iso, hasta_iso, categorias_sel):
+    """
+    Filtra la lista de transacciones (lista de dicts) por:
+    - tipo: 'ingreso', 'gasto' o 'todos'
+    - rango de fechas [desde_iso, hasta_iso]
+    - categorías seleccionadas (lista)
+
+    Devuelve (lista_filtrada, resumen_dict)
+    """
+    desde_iso = desde_iso or "0000-01-01"
+    hasta_iso = hasta_iso or "9999-12-31"
+
+    categorias_sel = categorias_sel or []
+
+    filtradas = []
+    total_ingresos = 0.0
+    total_gastos = 0.0
+
+    for data in transacciones:
+        fecha = data.get("fecha")
+        if not fecha:
+            continue
+
+        tipo_t = (data.get("tipo", "") or "").lower()
+        if tipo != "todos" and tipo_t != tipo:
+            continue
+
+        # fechas en formato YYYY-MM-DD → comparación de strings sirve
+        if fecha < desde_iso or fecha > hasta_iso:
+            continue
+
+        categoria = data.get("categoria", "")
+        if categorias_sel and categoria not in categorias_sel:
+            continue
+
+        # calcular valor_mostrado
+        valor = float(data.get("valor", 0))
+        if tipo_t == "gasto":
+            data["valor_mostrado"] = -abs(valor)
+            total_gastos += abs(valor)
+        else:
+            data["valor_mostrado"] = abs(valor)
+            if valor > 0:
+                total_ingresos += valor
+
+        filtradas.append(data)
+
+    diferencia = total_ingresos - total_gastos
+
+    resumen = {
+        "total_ingresos": total_ingresos,
+        "total_gastos": total_gastos,
+        "diferencia": diferencia,
+        "cantidad": len(filtradas),
+        "desde": desde_iso,
+        "hasta": hasta_iso,
+    }
+
+    return filtradas, resumen
 
 @app.route("/resumen-diario")
 @login_requerido
@@ -636,6 +911,76 @@ def resumen_mensual():
         totales=totales,
         formatear_cop=formatear_cop,
     )
+
+@app.route("/analisis", methods=["GET"])
+@login_requerido
+def analisis():
+    # -------- Parámetros del formulario (GET) --------
+    tipo = request.args.get("tipo", "todos")  # 'ingreso', 'gasto', 'todos'
+
+    periodo = request.args.get("periodo", "este_mes")
+    fecha_desde = request.args.get("fecha_desde")  # solo usado si periodo = personalizado
+    fecha_hasta = request.args.get("fecha_hasta")
+
+    periodo_comp = request.args.get("periodo_comp", "")
+    fecha_desde_comp = request.args.get("fecha_desde_comp")
+    fecha_hasta_comp = request.args.get("fecha_hasta_comp")
+
+    categorias_sel = request.args.getlist("categorias")
+
+    # -------- Cargar TODAS las transacciones una sola vez --------
+    docs = (
+        db.collection("transacciones")
+        .order_by("fecha")
+        .order_by("id_transaccion")
+        .stream()
+    )
+    todas = [d.to_dict() for d in docs]
+
+    # -------- Periodo principal --------
+    desde_iso, hasta_iso = calcular_rango_fechas(periodo, fecha_desde, fecha_hasta)
+    trans_principal, resumen_principal = filtrar_y_resumir(
+        todas, tipo, desde_iso, hasta_iso, categorias_sel
+    )
+
+    # -------- Periodo de comparación (opcional) --------
+    trans_comp = []
+    resumen_comp = None
+
+    if periodo_comp or (fecha_desde_comp and fecha_hasta_comp):
+        desde_comp_iso, hasta_comp_iso = calcular_rango_fechas(
+            periodo_comp or "personalizado",
+            fecha_desde_comp,
+            fecha_hasta_comp,
+        )
+        trans_comp, resumen_comp = filtrar_y_resumir(
+            todas, tipo, desde_comp_iso, hasta_comp_iso, categorias_sel
+        )
+
+    # Lista de categorías para el multiselect
+    categorias_todas = CATEGORIAS_INGRESO + CATEGORIAS_GASTO
+
+    return render_template(
+        "analisis.html",
+        tipo=tipo,
+        periodo=periodo,
+        fecha_desde=desde_iso,
+        fecha_hasta=hasta_iso,
+        periodo_comp=periodo_comp,
+        fecha_desde_comp=fecha_desde_comp or "",
+        fecha_hasta_comp=fecha_hasta_comp or "",
+        categorias_todas=categorias_todas,
+        categorias_seleccionadas=categorias_sel,
+        trans_principal=trans_principal,
+        resumen_principal=resumen_principal,
+        trans_comp=trans_comp,
+        resumen_comp=resumen_comp,
+        formatear_cop=formatear_cop,
+    )
+
+@app.context_processor
+def inject_helpers():
+    return dict(formatear_cop=formatear_cop)
 
 
 @app.route("/test_db")

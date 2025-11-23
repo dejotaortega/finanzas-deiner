@@ -3,88 +3,323 @@
 {% block title %}Inicio · Finanzas Deiner{% endblock %}
 
 {% block content %}
+<style>
+  /* Tarjetas del resumen rápido */
+  .resumen-card .monto {
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  .resumen-card h6 {
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 576px) {
+    .resumen-card .monto {
+      font-size: 1.05rem;
+    }
+  }
+
+  /* Limitamos estiramiento de gráficos */
+  .chart-container {
+    position: relative;
+    height: 260px;
+    max-height: 260px;
+  }
+</style>
+
 <div class="row g-4">
+
+  <!-- COLUMNA IZQUIERDA -->
   <div class="col-12 col-lg-8">
-    <div class="card">
+
+    <!-- Bienvenida + accesos -->
+    <div class="card mb-4">
       <div class="card-body">
         <h1 class="h4 mb-3">Bienvenido, Deiner 👋</h1>
         <p class="text-muted mb-4">
-          Aquí tenéi tu panel para controlar el billete: cuentas, ingresos,
+          Aquí Tienes tu panel para controlar el billete: cuentas, ingresos,
           gastos y resúmenes diarios/mensuales.
         </p>
 
         <div class="row g-3">
-          <div class="col-12 col-md-4">
+
+          <div class="col-6 col-md-3">
             <a href="{{ url_for('cuentas') }}" class="text-decoration-none">
               <div class="card border-0 h-100">
                 <div class="card-body">
                   <div class="badge bg-primary badge-tag mb-2">Paso 1</div>
-                  <h2 class="h5 mb-1">Cuentas</h2>
-                  <p class="text-muted small mb-0">
-                    Configura tus cuentas y saldos iniciales.
-                  </p>
+                  <h2 class="h6 mb-1">Cuentas</h2>
+                  <p class="text-muted small mb-0">Configura tus cuentas</p>
                 </div>
               </div>
             </a>
           </div>
 
-          <div class="col-12 col-md-4">
-            <a
-              href="{{ url_for('transacciones') }}"
-              class="text-decoration-none"
-            >
+          <div class="col-6 col-md-3">
+            <a href="{{ url_for('transacciones') }}" class="text-decoration-none">
               <div class="card border-0 h-100">
                 <div class="card-body">
                   <div class="badge bg-success badge-tag mb-2">Día a día</div>
-                  <h2 class="h5 mb-1">Transacciones</h2>
-                  <p class="text-muted small mb-0">
-                    Registra ingresos y gastos por fecha de trabajo.
-                  </p>
+                  <h2 class="h6 mb-1">Transacciones</h2>
+                  <p class="text-muted small mb-0">Registra movimientos</p>
                 </div>
               </div>
             </a>
           </div>
 
-          <div class="col-12 col-md-4">
-            <a
-              href="{{ url_for('resumen_diario') }}"
-              class="text-decoration-none"
-            >
+          <div class="col-6 col-md-3">
+            <a href="{{ url_for('resumen_diario') }}" class="text-decoration-none">
               <div class="card border-0 h-100">
                 <div class="card-body">
                   <div class="badge bg-info badge-tag mb-2">Vista</div>
-                  <h2 class="h5 mb-1">Resúmenes</h2>
-                  <p class="text-muted small mb-0">
-                    Mira cómo va el flujo diario y mensual.
-                  </p>
+                  <h2 class="h6 mb-1">Resúmenes</h2>
+                  <p class="text-muted small mb-0">Flujo diario/mensual</p>
                 </div>
               </div>
             </a>
           </div>
+
+          <div class="col-6 col-md-3">
+            <a href="{{ url_for('historicos') }}" class="text-decoration-none">
+              <div class="card border-0 h-100">
+                <div class="card-body">
+                  <div class="badge bg-warning badge-tag mb-2">Histórico</div>
+                  <h2 class="h6 mb-1">Historial</h2>
+                  <p class="text-muted small mb-0">Movimientos pasados</p>
+                </div>
+              </div>
+            </a>
+          </div>
+
         </div>
       </div>
     </div>
+
+    <!-- TARJETAS RESUMEN -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Resumen rápido</h2>
+
+        <div class="row g-3">
+
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 h-100 resumen-card">
+              <div class="card-body text-center">
+                <h6 class="text-muted">Saldo Global</h6>
+                <h4 class="fw-bold monto">{{ formatear_cop(total_global) }}</h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 h-100 resumen-card">
+              <div class="card-body text-center">
+                <h6 class="text-muted">Ingresos Hoy</h6>
+                <h4 class="fw-bold text-success monto">{{ formatear_cop(ingresos_hoy) }}</h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 h-100 resumen-card">
+              <div class="card-body text-center">
+                <h6 class="text-muted">Gastos Hoy</h6>
+                <h4 class="fw-bold text-danger monto">{{ formatear_cop(gastos_hoy) }}</h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 h-100 resumen-card">
+              <div class="card-body text-center">
+                <h6 class="text-muted">Diferencia Hoy</h6>
+                <h4 class="fw-bold monto {% if diferencia_hoy >= 0 %}text-success{% else %}text-danger{% endif %}">
+                  {{ formatear_cop(diferencia_hoy) }}
+                </h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 h-100 resumen-card">
+              <div class="card-body text-center">
+                <h6 class="text-muted">Ingresos Mes</h6>
+                <h4 class="fw-bold text-success monto">{{ formatear_cop(ingresos_mes) }}</h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 h-100 resumen-card">
+              <div class="card-body text-center">
+                <h6 class="text-muted">Gastos Mes</h6>
+                <h4 class="fw-bold text-danger monto">{{ formatear_cop(gastos_mes) }}</h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 h-100 resumen-card">
+              <div class="card-body text-center">
+                <h6 class="text-muted">Diferencia Mes</h6>
+                <h4 class="fw-bold monto {% if diferencia_mes >= 0 %}text-success{% else %}text-danger{% endif %}">
+                  {{ formatear_cop(diferencia_mes) }}
+                </h4>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAFICO MENSUAL -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Ingresos vs Gastos por mes</h2>
+        <div class="chart-container">
+          <canvas id="chartMeses"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÚLTIMAS TRANSACCIONES -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Últimas transacciones</h2>
+
+        {% if ultimas_transacciones %}
+        <table class="table table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Descripción</th>
+              <th>Tipo</th>
+              <th>Cuenta</th>
+              <th>Categoría</th>
+              <th class="text-end">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in ultimas_transacciones %}
+            <tr>
+              <td>{{ t.fecha }}</td>
+              <td>{{ t.descripcion }}</td>
+              <td>
+                <span class="badge {% if t.tipo=='gasto' %}bg-danger{% else %}bg-success{% endif %}">
+                  {{ t.tipo }}
+                </span>
+              </td>
+              <td>{{ t.cuenta }}</td>
+              <td>{{ t.categoria }}</td>
+              <td class="text-end">{{ formatear_cop(t.valor_mostrado) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        {% else %}
+        <p class="text-muted mb-0">Todavía no hay transacciones.</p>
+        {% endif %}
+      </div>
+    </div>
+
   </div>
 
-  <!-- Panel lateral -->
-  <div class="col-12 col-lg-4">
-    <div class="card">
+  <!-- COLUMNA DERECHA -->
+    <div class="col-12 col-lg-4">
+
+    <div class="card mb-4">
       <div class="card-body">
         <h2 class="h6 mb-3">Tips de uso rápido</h2>
         <ul class="small text-muted mb-0">
-          <li>Siempre trabaja con una <strong>fecha de trabajo</strong>.</li>
-          <li>
-            Actualiza los <strong>saldos de las cuentas</strong> desde la
-            pantalla de Cuentas.
-          </li>
-          <li>
-            Cada transacción ajusta el
-            <strong>saldo de la cuenta</strong> y el
-            <strong>saldo global</strong>.
-          </li>
+          <li>Trabaja siempre con una <strong>fecha de trabajo</strong>.</li>
+          <li>Actualiza los <strong>saldos</strong> desde la pantalla de Cuentas.</li>
+          <li>Cada transacción ajusta el <strong>saldo global</strong>.</li>
         </ul>
       </div>
     </div>
+
+    <!-- SALDOS POR CUENTA -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Saldos por cuenta</h2>
+        {% if cuentas_dashboard %}
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for c in cuentas_dashboard %}
+            <tr>
+              <td class="small">{{ c.nombre }}</td>
+              <td class="text-end fw-semibold small">
+                {{ formatear_cop(c.saldo) }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted mb-0">Aún no has creado cuentas.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- GASTOS POR CATEGORÍA -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Gastos por categoría (mes actual)</h2>
+
+        {% if cat_labels_json and cat_values_json %}
+        <div class="chart-container">
+          <canvas id="chartCategorias"></canvas>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Aún no hay gastos este mes.</p>
+        {% endif %}
+      </div>
+    </div>
+
   </div>
+
 </div>
+
+<!-- CHART.JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  const labelsMeses = {{ meses_labels_json|safe }};
+  const ingresosMesData = {{ ingresos_mes_chart_json|safe }};
+  const gastosMesData = {{ gastos_mes_chart_json|safe }};
+
+  const catLabels = {{ cat_labels_json|safe }};
+  const catValues = {{ cat_values_json|safe }};
+
+  if (labelsMeses.length) {
+    new Chart(document.getElementById('chartMeses'), {
+      type: 'bar',
+      data: {
+        labels: labelsMeses,
+        datasets: [
+          { label: 'Ingresos', data: ingresosMesData, backgroundColor: '#4CAF50' },
+          { label: 'Gastos', data: gastosMesData, backgroundColor: '#E74C3C' }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
+
+  if (catLabels.length) {
+    new Chart(document.getElementById('chartCategorias'), {
+      type: 'doughnut',
+      data: {
+        labels: catLabels,
+        datasets: [
+          { data: catValues }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
+</script>
+
 {% endblock %}

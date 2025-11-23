@@ -44,6 +44,11 @@
                 Cuentas
               </a>
             </li>
+
+            <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('analisis') }}">Análisis</a>
+            </li>
+
             <li class="nav-item">
               <a
                 class="nav-link {% if request.path.startswith('/transacciones') %}active{% endif %}"
@@ -70,26 +75,57 @@
             </li>
 
   <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle
-              {% if request.path.startswith('/ingresos') or request.path.startswith('/gastos') %}
-                active
-              {% endif %}"
-       href="#" id="navbarHist" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-      Históricos
-    </a>
-    <ul class="dropdown-menu" aria-labelledby="navbarHist">
-      <li>
+  <a class="nav-link dropdown-toggle
+            {% if request.path.startswith('/historicos') 
+                  or request.path.startswith('/ingresos') 
+                  or request.path.startswith('/gastos') 
+                  or request.path.startswith('/resumen-diario') 
+                  or request.path.startswith('/resumen-mensual') %}
+              active
+            {% endif %}"
+     href="{{ url_for('historicos') }}" 
+     id="navbarDropdown"
+     role="button" 
+     data-bs-toggle="dropdown" 
+     aria-expanded="false">
+    Históricos
+  </a>
+
+  <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+    <li>
+        <a class="dropdown-item" href="{{ url_for('historicos') }}">
+            Panel de históricos
+        </a>
+    </li>
+
+    <li><hr class="dropdown-divider"></li>
+
+    <li>
         <a class="dropdown-item" href="{{ url_for('ingresos_historicos') }}">
-          Ingresos
+            Ingresos
         </a>
-      </li>
-      <li>
+    </li>
+
+    <li>
         <a class="dropdown-item" href="{{ url_for('gastos_historicos') }}">
-          Gastos
+            Gastos
         </a>
-      </li>
-    </ul>
-  </li>
+    </li>
+
+    <li>
+        <a class="dropdown-item" href="{{ url_for('resumen_diario') }}">
+            Resumen diario
+        </a>
+    </li>
+
+    <li>
+        <a class="dropdown-item" href="{{ url_for('resumen_mensual') }}">
+            Resumen mensual
+        </a>
+    </li>
+  </ul>
+</li>
+
 </ul>
         
 
