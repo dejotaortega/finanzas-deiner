@@ -6,17 +6,21 @@
 <style>
   /* Tarjetas del resumen rápido */
   .resumen-card .monto {
-    font-size: 1.25rem;
-    line-height: 1.2;
+    font-size: 1.2rem;
+    line-height: 1.3;
+    word-wrap: break-word;
   }
 
-  .resumen-card h6 {
-    font-size: 0.75rem;
+  .resumen-card {
+    height: 120px;            /* Tamaño consistente */
   }
 
   @media (max-width: 576px) {
     .resumen-card .monto {
-      font-size: 1.05rem;
+      font-size: 1rem;
+    }
+    .resumen-card {
+      height: 110px;
     }
   }
 
@@ -184,6 +188,16 @@
       </div>
     </div>
 
+<div class="card mb-4">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Saldo Final - Últimos 30 días</h2>
+
+    <div class="chart-container">
+      <canvas id="chartSaldo30"></canvas>
+    </div>
+  </div>
+</div>
+
     <!-- ÚLTIMAS TRANSACCIONES -->
     <div class="card mb-4">
       <div class="card-body">
@@ -320,6 +334,32 @@
       options: { responsive: true, maintainAspectRatio: false }
     });
   }
+
+const fechasLinea = {{ fechas_linea_json | safe }};
+  const valoresLinea = {{ valores_linea_json | safe }};
+
+  const ctxSaldo = document.getElementById("chartSaldo30").getContext("2d");
+
+  new Chart(ctxSaldo, {
+    type: "line",
+    data: {
+      labels: fechasLinea,
+      datasets: [{
+        label: "Saldo final",
+        data: valoresLinea,
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: false }
+      }
+    }
+  });
 </script>
 
 {% endblock %}

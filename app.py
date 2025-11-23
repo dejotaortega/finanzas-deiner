@@ -173,7 +173,8 @@ def home():
         total_global = sum(c.to_dict().get("saldo_inicial", 0) for c in cuentas_docs_tmp)
 
     # -------- 2) RESUMEN DEL DÍA --------
-    hoy = date.today().isoformat()
+    hoy_date = date.today()
+    hoy = hoy_date.isoformat()
 
     trans_hoy = (
         db.collection("transacciones")
@@ -217,7 +218,7 @@ def home():
 
     diferencia_mes = ingresos_mes - gastos_mes
 
-    # -------- 4) DATOS PARA GRÁFICA MENSUAL --------
+    # -------- 4) DATOS PARA GRÁFICA MENSUAL (INGRESOS VS GASTOS) --------
     resumen_diario, _ = calcular_resumen_diario()
 
     resumen_mes_dict = {}
@@ -280,7 +281,7 @@ def home():
             data["valor_mostrado"] = abs(valor)
         ultimas_transacciones.append(data)
 
-    # -------- 7) SALDOS POR CUENTA PARA EL DASHBOARD --------
+    # -------- 7) SALDOS POR CUENTA --------
     cuentas_docs = db.collection("cuentas").stream()
     cuentas_dashboard = []
     for c in cuentas_docs:
@@ -290,7 +291,40 @@ def home():
             "saldo": info.get("saldo_inicial", 0),
         })
 
-    # -------- 8) RENDER --------
+       # -------- 8) SALDO FINAL ÚLTIMOS 30 DÍAS (SOLO DÍAS CON MOVIMIENTOS) --------
+    hace_30 = hoy_date - timedelta(days=30)
+
+    trans_ultimos_30 = (
+        db.collection("transacciones")
+        .where("fecha", ">=", hace_30.isoformat())
+        .order_by("fecha")
+        .order_by("id_transaccion")
+        .stream()
+    )
+
+    # Para cada día, nos quedamos con el saldo_final de la ÚLTIMA transacción de ese día
+    saldos_por_dia = {}  # fecha -> saldo_final
+
+    for d in trans_ultimos_30:
+        data = d.to_dict()
+        fecha_t = data.get("fecha")
+        if not fecha_t:
+            continue
+
+        saldo_final = data.get("saldo_final", 0)
+        # Como vamos en orden por fecha + id, lo que quede al final es el último saldo de ese día
+        saldos_por_dia[fecha_t] = saldo_final
+
+    # Ordenamos las fechas de menor a mayor
+    fechas_linea = sorted(saldos_por_dia.keys())
+    valores_linea = [saldos_por_dia[f] for f in fechas_linea]
+
+    # Convertimos a JSON para Chart.js
+    fechas_linea_json = json.dumps(fechas_linea)
+    valores_linea_json = json.dumps(valores_linea)
+
+
+    # -------- 9) RENDER --------
     return render_template(
         "home.html",
         total_global=total_global,
@@ -306,7 +340,9 @@ def home():
         cat_labels_json=cat_labels_json,
         cat_values_json=cat_values_json,
         ultimas_transacciones=ultimas_transacciones,
-        cuentas_dashboard=cuentas_dashboard,   # 👈 AQUÍ VAN LAS CUENTAS
+        cuentas_dashboard=cuentas_dashboard,
+        fechas_linea_json=fechas_linea_json,
+        valores_linea_json=valores_linea_json,
     )
 
 @app.route("/historicos")
