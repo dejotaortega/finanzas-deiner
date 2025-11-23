@@ -978,6 +978,102 @@ def analisis():
         formatear_cop=formatear_cop,
     )
 
+@app.route("/reporte-general", methods=["GET"])
+@login_requerido
+def reporte_general():
+    # 1) Parámetros del filtro
+    periodo = request.args.get("periodo", "este_mes")
+    fecha_desde = request.args.get("fecha_desde")
+    fecha_hasta = request.args.get("fecha_hasta")
+
+    # Usamos el helper que ya tenemos
+    desde_iso, hasta_iso = calcular_rango_fechas(periodo, fecha_desde, fecha_hasta)
+
+    # 2) Cargar todas las transacciones y filtrar por rango
+    docs = (
+        db.collection("transacciones")
+        .order_by("fecha")
+        .order_by("id_transaccion")
+        .stream()
+    )
+
+    ingresos_por_cat = {}
+    gastos_por_cat = {}
+    total_ingresos = 0.0
+    total_gastos = 0.0
+
+    for d in docs:
+        data = d.to_dict()
+        fecha = data.get("fecha")
+        if not fecha:
+            continue
+
+        if fecha < desde_iso or fecha > hasta_iso:
+            continue
+
+        tipo_t = (data.get("tipo", "") or "").lower()
+        categoria = data.get("categoria", "Sin categoría")
+        valor = float(data.get("valor", 0))
+
+        if tipo_t == "gasto":
+            valor_abs = abs(valor)
+            gastos_por_cat[categoria] = gastos_por_cat.get(categoria, 0) + valor_abs
+            total_gastos += valor_abs
+        else:
+            # ingreso (valor guardado ya es positivo)
+            valor_abs = abs(valor)
+            ingresos_por_cat[categoria] = ingresos_por_cat.get(categoria, 0) + valor_abs
+            total_ingresos += valor_abs
+
+    # 3) Agrupar ingresos como en tu Excel
+    sueldo_deiner = ingresos_por_cat.get("Sueldo Deiner", 0)
+    sueldo_sole = ingresos_por_cat.get("Sueldo Sole", 0)
+    total_sueldos = sueldo_deiner + sueldo_sole
+
+    negocios = ingresos_por_cat.get("Negocios", 0)
+    ariadna_babyshop = ingresos_por_cat.get("Ariadna Babyshop", 0)
+    total_negocios = negocios + ariadna_babyshop
+
+    otros_ingresos = ingresos_por_cat.get("Otros ingresos", 0)
+    prestamos = ingresos_por_cat.get("Prestamos", 0)
+    total_otros = otros_ingresos + prestamos
+
+    saldo_periodo = total_ingresos - total_gastos
+
+    # 4) Para mostrar todas las categorías de gastos en orden
+    #    (usamos la lista CATEGORIAS_GASTO ya definida arriba)
+    gastos_ordenados = []
+    for cat in CATEGORIAS_GASTO:
+        gastos_ordenados.append({
+            "categoria": cat,
+            "valor": gastos_por_cat.get(cat, 0)
+        })
+
+    # 5) Texto del rango
+    rango_texto = f"{desde_iso} a {hasta_iso}"
+
+    return render_template(
+        "reporte_general.html",
+        periodo=periodo,
+        fecha_desde=desde_iso,
+        fecha_hasta=hasta_iso,
+        rango_texto=rango_texto,
+        total_ingresos=total_ingresos,
+        total_gastos=total_gastos,
+        saldo_periodo=saldo_periodo,
+        total_sueldos=total_sueldos,
+        sueldo_deiner=sueldo_deiner,
+        sueldo_sole=sueldo_sole,
+        total_negocios=total_negocios,
+        negocios=negocios,
+        ariadna_babyshop=ariadna_babyshop,
+        total_otros=total_otros,
+        otros_ingresos=otros_ingresos,
+        prestamos=prestamos,
+        gastos_ordenados=gastos_ordenados,
+        formatear_cop=formatear_cop,
+    )
+
 @app.context_processor
 def inject_helpers():
     return dict(formatear_cop=formatear_cop)

@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte General{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="fw-bold mb-3">Reporte General de Ingresos y Gastos</h2>
+  <p class="text-muted mb-4">
+    Período: <strong>{{ rango_texto }}</strong>
+  </p>
+
+  <!-- FILTRO DE PERÍODO -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="GET" class="row g-3">
+
+        <div class="col-md-3">
+          <label class="form-label">Período</label>
+          <select name="periodo" class="form-select">
+            <option value="este_mes" {% if periodo=='este_mes' %}selected{% endif %}>Este mes</option>
+            <option value="mes_anterior" {% if periodo=='mes_anterior' %}selected{% endif %}>Mes anterior</option>
+            <option value="ultimos_7_dias" {% if periodo=='ultimos_7_dias' %}selected{% endif %}>Últimos 7 días</option>
+            <option value="ultimos_30_dias" {% if periodo=='ultimos_30_dias' %}selected{% endif %}>Últimos 30 días</option>
+            <option value="este_anio" {% if periodo=='este_anio' %}selected{% endif %}>Este año</option>
+            <option value="anio_anterior" {% if periodo=='anio_anterior' %}selected{% endif %}>Año anterior</option>
+            <option value="personalizado" {% if periodo=='personalizado' %}selected{% endif %}>Personalizado</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Desde</label>
+          <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Hasta</label>
+          <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-primary w-100">Aplicar</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- TABLA ESTILO EXCEL -->
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th style="width: 40%;">Concepto</th>
+              <th style="width: 30%;" class="text-end">Total período</th>
+              <th style="width: 30%;" class="text-end">Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- INGRESOS -->
+            <tr class="table-light">
+              <td class="fw-bold">INGRESOS</td>
+              <td class="fw-bold text-end text-success">
+                {{ formatear_cop(total_ingresos) }}
+              </td>
+              <td></td>
+            </tr>
+
+            <!-- Sueldos -->
+            <tr>
+              <td class="ps-4">Sueldos</td>
+              <td class="text-end text-success">
+                {{ formatear_cop(total_sueldos) }}
+              </td>
+              <td></td>
+            </tr>
+            <tr class="small text-muted">
+              <td class="ps-5">Deiner</td>
+              <td></td>
+              <td class="text-end">
+                {{ formatear_cop(sueldo_deiner) }}
+              </td>
+            </tr>
+            <tr class="small text-muted">
+              <td class="ps-5">Sole</td>
+              <td></td>
+              <td class="text-end">
+                {{ formatear_cop(sueldo_sole) }}
+              </td>
+            </tr>
+
+            <!-- Negocios -->
+            <tr>
+              <td class="ps-4">Negocios</td>
+              <td class="text-end text-success">
+                {{ formatear_cop(total_negocios) }}
+              </td>
+              <td></td>
+            </tr>
+            <tr class="small text-muted">
+              <td class="ps-5">Ariadna Babyshop</td>
+              <td></td>
+              <td class="text-end">
+                {{ formatear_cop(ariadna_babyshop) }}
+              </td>
+            </tr>
+
+            <!-- Otros ingresos -->
+            <tr>
+              <td class="ps-4">Otros ingresos</td>
+              <td class="text-end text-success">
+                {{ formatear_cop(total_otros) }}
+              </td>
+              <td></td>
+            </tr>
+            <tr class="small text-muted">
+              <td class="ps-5">Otros ingresos</td>
+              <td></td>
+              <td class="text-end">
+                {{ formatear_cop(otros_ingresos) }}
+              </td>
+            </tr>
+            <tr class="small text-muted">
+              <td class="ps-5">Préstamos</td>
+              <td></td>
+              <td class="text-end">
+                {{ formatear_cop(prestamos) }}
+              </td>
+            </tr>
+
+            <!-- ESPACIO -->
+            <tr><td colspan="3"></td></tr>
+
+            <!-- GASTOS -->
+            <tr class="table-light">
+              <td class="fw-bold">GASTOS</td>
+              <td class="fw-bold text-end text-danger">
+                {{ formatear_cop(total_gastos) }}
+              </td>
+              <td></td>
+            </tr>
+
+            {% for g in gastos_ordenados %}
+            <tr>
+              <td class="ps-4">{{ g.categoria }}</td>
+              <td class="text-end text-danger">
+                {{ formatear_cop(g.valor) }}
+              </td>
+              <td></td>
+            </tr>
+            {% endfor %}
+
+            <!-- ESPACIO -->
+            <tr><td colspan="3"></td></tr>
+
+            <!-- SALDO -->
+            <tr class="table-light">
+              <td class="fw-bold">SALDO DEL PERÍODO</td>
+              <td class="fw-bold text-end {% if saldo_periodo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {{ formatear_cop(saldo_periodo) }}
+              </td>
+              <td></td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
